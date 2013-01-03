@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pipeline="http://www.pipeline.com/schema/pipeline"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.pipeline.com/schema/pipeline http://www.pipeline.com/schema/pipeline/pipeline-1.0.xsd">
+
+    <pipeline:pipeline id="pipe1">
+        <pipeline:node action-ref="action1"/>
+        <pipeline:node action-ref="action2"/>
+        <pipeline:node action-ref="action3"/>
+    </pipeline:pipeline>
+
+    <bean class="com.pipeline.Action1" id="action1"/>
+    <bean class="com.pipeline.Action2" id="action2"/>
+    <bean class="com.pipeline.Action3" id="action3"/>
+</beans>
