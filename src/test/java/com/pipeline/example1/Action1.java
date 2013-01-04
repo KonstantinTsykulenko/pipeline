@@ -1,4 +1,4 @@
-package com.pipeline;
+package com.pipeline.example1;
 
 import com.pipeline.annotation.HandlerMethod;
 

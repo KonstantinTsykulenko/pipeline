@@ -5,6 +5,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,22 +15,32 @@ import java.util.List;
  * @since 1/2/13
  */
 public class PipelineRuntime {
-    private List<Executor> executorList = new LinkedList<Executor>();
+    private List<NodeRuntime> nodeRuntimeList = new LinkedList<NodeRuntime>();
 
     public PipelineRuntime(Pipeline pipeline) {
         for (Node node : pipeline.getNodes()) {
             for (Method method : node.getAction().getClass().getMethods()) {
                 if (AnnotationUtils.findAnnotation(method, HandlerMethod.class) != null) {
-                    executorList.add(new Executor(method, node.getAction()));
+                    nodeRuntimeList.add(new NodeRuntime(method, node.getAction()));
                 }
             }
         }
     }
 
+    public void run(Object... params) {
+        ExecutionContext executionContext = new ExecutionContext();
+        for (Object param : params) {
+            executionContext.putObject(param);
+        }
+        run(executionContext);
+    }
+
     public void run(ExecutionContext executionContext) {
-        for(Executor executor : executorList) {
+        for(NodeRuntime nodeRuntime : nodeRuntimeList) {
             try {
-                executor.action.invoke(executor.actionObject);
+                List<Object> invocationParams = getInvocationParams(executionContext, nodeRuntime.getArguments());
+                Object result = nodeRuntime.action.invoke(nodeRuntime.actionObject, invocationParams.toArray());
+                executionContext.putObject(result);
             } catch (IllegalAccessException e) {
 
             } catch (InvocationTargetException e) {
@@ -37,13 +49,25 @@ public class PipelineRuntime {
         }
     }
 
-    private static class Executor {
+    private List<Object> getInvocationParams(ExecutionContext executionContext, List<Class<?>> arguments) {
+        List<Object> invocationParams = new ArrayList<Object>(arguments.size());
+        for (Class<?> argumentClass : arguments) {
+            invocationParams.add(executionContext.getObject(argumentClass));
+        }
+        return invocationParams;
+    }
+
+    private static class NodeRuntime {
         private Method action;
         private Object actionObject;
 
-        private Executor(Method action, Object actionObject) {
+        private NodeRuntime(Method action, Object actionObject) {
             this.action = action;
             this.actionObject = actionObject;
+        }
+
+        public List<Class<?>> getArguments() {
+            return Arrays.asList(action.getParameterTypes());
         }
     }
 }

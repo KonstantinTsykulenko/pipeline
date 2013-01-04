@@ -1,4 +1,4 @@
-package com.pipeline;
+package com.pipeline.example1;
 
 import com.pipeline.annotation.HandlerMethod;
 
@@ -6,9 +6,9 @@ import com.pipeline.annotation.HandlerMethod;
  * @author KonstantinTsykulenko
  * @since 1/2/13
  */
-public class Action3 {
+public class Action2 {
     @HandlerMethod
     public void process() {
-        System.out.println("action3");
+        System.out.println("action2");
     }
 }

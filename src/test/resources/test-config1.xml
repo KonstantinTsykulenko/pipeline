@@ -10,7 +10,7 @@
         <pipeline:node action-ref="action3"/>
     </pipeline:pipeline>
 
-    <bean class="com.pipeline.Action1" id="action1"/>
-    <bean class="com.pipeline.Action2" id="action2"/>
-    <bean class="com.pipeline.Action3" id="action3"/>
+    <bean class="com.pipeline.example1.Action1" id="action1"/>
+    <bean class="com.pipeline.example1.Action2" id="action2"/>
+    <bean class="com.pipeline.example1.Action3" id="action3"/>
 </beans>
