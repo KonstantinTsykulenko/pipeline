@@ -1,7 +1,7 @@
 package com.pipeline.example1;
 
-import com.pipeline.ExecutionContext;
-import com.pipeline.PipelineRuntime;
+import com.pipeline.runtime.ExecutionContext;
+import com.pipeline.runtime.PipelineRuntime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
