@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @since 1/2/13
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration("classpath:test-config1.xml")
+@ContextConfiguration("classpath:spring/test-example1.xml")
 public class SimplePipelineTest {
     @Autowired
     private PipelineRuntime pipelineRuntime;

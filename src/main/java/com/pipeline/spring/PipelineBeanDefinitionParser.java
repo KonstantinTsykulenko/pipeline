@@ -1,6 +1,6 @@
 package com.pipeline.spring;
 
-import com.pipeline.Pipeline;
+import com.pipeline.definition.Pipeline;
 import com.pipeline.runtime.PipelineRuntime;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;

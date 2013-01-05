@@ -1,11 +1,8 @@
 package com.pipeline.runtime;
 
-import com.pipeline.Node;
-import com.pipeline.Pipeline;
-import com.pipeline.annotation.HandlerMethod;
-import org.springframework.core.annotation.AnnotationUtils;
+import com.pipeline.definition.Node;
+import com.pipeline.definition.Pipeline;
 
-import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,11 +15,7 @@ public class PipelineRuntime {
 
     public PipelineRuntime(Pipeline pipeline) {
         for (Node node : pipeline.getNodes()) {
-            for (Method method : node.getAction().getClass().getMethods()) {
-                if (AnnotationUtils.findAnnotation(method, HandlerMethod.class) != null) {
-                    nodeRuntimeList.add(new NodeRuntime(method, node.getAction()));
-                }
-            }
+            nodeRuntimeList.add(new NodeRuntime(node.getAction()));
         }
     }
 

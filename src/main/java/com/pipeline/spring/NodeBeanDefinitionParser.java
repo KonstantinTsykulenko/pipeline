@@ -1,6 +1,6 @@
 package com.pipeline.spring;
 
-import com.pipeline.Node;
+import com.pipeline.definition.Node;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;

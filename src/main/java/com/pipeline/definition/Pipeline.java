@@ -1,4 +1,4 @@
-package com.pipeline;
+package com.pipeline.definition;
 
 import java.util.List;
 
