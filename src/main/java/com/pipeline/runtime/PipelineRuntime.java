@@ -22,8 +22,10 @@ public class PipelineRuntime {
 
     public Map<String, Object> run(Object... params) {
         ExecutionContext executionContext = new ExecutionContext();
-        for (Object param : params) {
-            executionContext.putObject(param);
+        if (params != null) {
+            for (Object param : params) {
+                executionContext.putObject(param);
+            }
         }
         return run(executionContext);
     }
