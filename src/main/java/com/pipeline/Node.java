@@ -1,7 +1,7 @@
 package com.pipeline;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/2/13
  */
 public class Node {

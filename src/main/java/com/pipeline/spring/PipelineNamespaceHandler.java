@@ -3,7 +3,7 @@ package com.pipeline.spring;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/1/13
  */
 public class PipelineNamespaceHandler extends NamespaceHandlerSupport {

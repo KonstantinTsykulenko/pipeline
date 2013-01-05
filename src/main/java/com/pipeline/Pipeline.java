@@ -3,7 +3,7 @@ package com.pipeline;
 import java.util.List;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/2/13
  */
 public class Pipeline {

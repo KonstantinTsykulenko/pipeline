@@ -10,7 +10,7 @@ import org.springframework.util.StringUtils;
 import org.w3c.dom.Element;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/2/13
  */
 public class NodeBeanDefinitionParser extends AbstractBeanDefinitionParser {

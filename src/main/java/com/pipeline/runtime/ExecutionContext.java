@@ -1,12 +1,12 @@
-package com.pipeline;
+package com.pipeline.runtime;
 
-import com.pipeline.exception.IllegalExecutionContextArgument;
+import com.pipeline.exception.IllegalExecutionContextArgumentException;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/3/13
  */
 public class ExecutionContext {
@@ -17,7 +17,10 @@ public class ExecutionContext {
         if (objectMap.size() == 1) {
             return (T) objectMap.values().iterator().next();
         }
-        throw new RuntimeException();
+        throw new IllegalStateException(String.format(
+                "Execution context should contain exactly one object of class %s to bind invocation arguments by class, but contains %d",
+                clazz,
+                objectMap.size()));
     }
 
     public void putObject(Object object) {
@@ -29,7 +32,7 @@ public class ExecutionContext {
 
         }
         else {
-            throw new IllegalExecutionContextArgument(
+            throw new IllegalExecutionContextArgumentException(
                     "Object of the same class is put into execution context without disambiguation identifier");
         }
     }

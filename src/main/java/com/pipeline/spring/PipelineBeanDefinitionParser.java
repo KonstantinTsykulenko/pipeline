@@ -1,7 +1,7 @@
 package com.pipeline.spring;
 
 import com.pipeline.Pipeline;
-import com.pipeline.PipelineRuntime;
+import com.pipeline.runtime.PipelineRuntime;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedList;
@@ -13,7 +13,7 @@ import org.w3c.dom.Element;
 import java.util.List;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/2/13
  */
 public class PipelineBeanDefinitionParser extends AbstractBeanDefinitionParser {

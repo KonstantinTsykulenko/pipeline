@@ -7,9 +7,9 @@ import java.lang.annotation.Target;
 
 /**
  * @author Konstantin Tsykulenko
- * @since 1/2/13
+ * @since 1/5/13
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface HandlerMethod {
+@Target(ElementType.PARAMETER)
+public @interface ContextAttribute {
 }
