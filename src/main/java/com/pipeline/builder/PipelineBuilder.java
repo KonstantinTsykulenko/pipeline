@@ -12,7 +12,7 @@ import java.util.List;
  * @since 1/5/13
  */
 public class PipelineBuilder {
-    public static final int DEFAULT_NODE_CAPACITY = 20;
+    private static final int DEFAULT_NODE_CAPACITY = 20;
     private List<Node> nodes = new ArrayList<Node>(DEFAULT_NODE_CAPACITY);
 
     public PipelineRuntime buildPipeline() {
