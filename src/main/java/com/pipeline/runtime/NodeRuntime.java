@@ -62,7 +62,8 @@ class NodeRuntime {
     private List<ActionArgumentBinding> createActionArgumentBindings(Method action) {
         Annotation[][] parameterAnnotations = action.getParameterAnnotations();
         Class<?>[] parameterTypes = action.getParameterTypes();
-        List<ActionArgumentBinding> result = new ArrayList<ActionArgumentBinding>(parameterTypes.length);
+        List<ActionArgumentBinding> result =
+                new ArrayList<ActionArgumentBinding>(parameterTypes.length);
 
         int index = 0;
         for (Class<?> argumentType : parameterTypes) {

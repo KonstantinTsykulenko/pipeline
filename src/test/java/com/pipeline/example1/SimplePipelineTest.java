@@ -20,6 +20,6 @@ public class SimplePipelineTest {
 
     @Test
     public void test() {
-        pipelineRuntime.run((ExecutionContext) null);
+        pipelineRuntime.run(new ExecutionContext());
     }
 }

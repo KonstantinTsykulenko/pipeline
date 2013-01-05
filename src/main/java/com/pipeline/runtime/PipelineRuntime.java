@@ -5,6 +5,7 @@ import com.pipeline.definition.Pipeline;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Konstantin Tsykulenko
@@ -19,17 +20,29 @@ public class PipelineRuntime {
         }
     }
 
-    public void run(Object... params) {
+    public Map<String, Object> run(Object... params) {
         ExecutionContext executionContext = new ExecutionContext();
         for (Object param : params) {
             executionContext.putObject(param);
         }
-        run(executionContext);
+        return run(executionContext);
     }
 
-    public void run(ExecutionContext executionContext) {
+    public Map<String, Object> run(Map<String, Object> contextMap) {
+        ExecutionContext executionContext = new ExecutionContext();
+        for (Map.Entry<String, Object> entry : contextMap.entrySet()) {
+            executionContext.putObject(entry.getKey(), entry.getValue());
+        }
+        return run(executionContext);
+    }
+
+    public Map<String, Object> run(ExecutionContext executionContext) {
+        if (executionContext == null)
+            throw new IllegalArgumentException("Execution context can not be null");
+
         for (NodeRuntime nodeRuntime : nodeRuntimeList) {
             nodeRuntime.run(executionContext);
         }
+        return executionContext.getContextMap();
     }
 }
