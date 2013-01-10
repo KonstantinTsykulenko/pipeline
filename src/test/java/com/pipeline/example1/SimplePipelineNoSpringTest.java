@@ -1,6 +1,6 @@
 package com.pipeline.example1;
 
-import com.pipeline.builder.PipelineBuilder;
+import com.pipeline.builder.PipelineRuntimeBuilder;
 import org.junit.Test;
 
 /**
@@ -10,7 +10,7 @@ import org.junit.Test;
 public class SimplePipelineNoSpringTest {
     @Test
     public void test() {
-        new PipelineBuilder().
+        new PipelineRuntimeBuilder().
                 node(new Action1()).
                 node(new Action2()).
                 node(new Action3()).

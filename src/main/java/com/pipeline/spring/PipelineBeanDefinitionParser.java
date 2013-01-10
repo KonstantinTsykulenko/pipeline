@@ -1,7 +1,7 @@
 package com.pipeline.spring;
 
 import com.pipeline.definition.Pipeline;
-import com.pipeline.runtime.PipelineRuntime;
+import com.pipeline.runtime.reflection.PipelineRuntime;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedList;
