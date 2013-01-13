@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,6 +19,8 @@ import java.util.Map;
 public class ProcessorGenerator {
     private static final DynamicClassLoader pipelineRuntimeLoader =
             new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
+
+    public static final String CONTEXT_FIELD = "context";
 
     public Processor getProcessor(Pipeline pipeline) {
         Class<?> processorClass = pipelineRuntimeLoader.loadClass(createProcessorBytecode(pipeline));
@@ -33,7 +36,9 @@ public class ProcessorGenerator {
     private byte[] createProcessorBytecode(Pipeline pipeline) {
         ClassNode classNode = createProcessorClassDefinition();
 
-        classNode.methods.add(createDefaultConstructor());
+        classNode.fields.add(createContextField());
+
+        classNode.methods.add(createDefaultConstructor(classNode));
 
         Method method;
         try {
@@ -42,25 +47,77 @@ public class ProcessorGenerator {
             throw new IllegalStateException(e);
         }
 
-        MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, "run", Type.getMethodDescriptor(method), null, null);
-        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
-        runMethod.instructions.add(new LdcInsnNode("I'm running!"));
-        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V"));
-        runMethod.instructions.add(new InsnNode(Opcodes.ACONST_NULL));
-        runMethod.instructions.add(new InsnNode(Opcodes.ARETURN));
-        classNode.methods.add(runMethod);
+        classNode.methods.add(createRunMethod(classNode, method));
 
         final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         classNode.accept(cw);
         return cw.toByteArray();
     }
 
-    private MethodNode createDefaultConstructor() {
+    private MethodNode createRunMethod(ClassNode classNode, Method method) {
+        MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, "run", Type.getMethodDescriptor(method), null, null);
+        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
+        runMethod.instructions.add(new LdcInsnNode("I'm running!"));
+        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V"));
+        runMethod.instructions.add(new InsnNode(Opcodes.ACONST_NULL));
+
+        runMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        // stack: this
+        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(HashMap.class)));
+        // stack: hashmap
+        runMethod.instructions.add(new LdcInsnNode("some_test_param"));
+        // stack: hashmap :: key
+        runMethod.instructions.add(new LdcInsnNode("some_test_value"));
+        // stack: hashmap :: key :: value
+        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/util/HashMap", "put", Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class), Type.getType(Object.class))));
+        // stack:
+
+
+        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
+
+
+        runMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        // stack: this
+        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(HashMap.class)));
+        // stack: hashmap
+        runMethod.instructions.add(new LdcInsnNode("some_test_param"));
+        // stack: hashmap :: key
+        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/util/HashMap", "get", Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class))));
+        // stack: hashmap :: value
+        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "toString", Type.getMethodDescriptor(Type.getType(String.class))));
+
+        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V"));
+        runMethod.instructions.add(new InsnNode(Opcodes.ACONST_NULL));
+        runMethod.instructions.add(new InsnNode(Opcodes.ARETURN));
+        return runMethod;
+    }
+
+    private FieldNode createContextField() {
+        return new FieldNode(Opcodes.ACC_PUBLIC, "context", Type.getDescriptor(HashMap.class), null, null);
+    }
+
+    private MethodNode createDefaultConstructor(ClassNode classNode) {
         MethodNode defaultConstructor = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+
         defaultConstructor.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
         defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V"));
+
+        initContext(classNode, defaultConstructor);
+
         defaultConstructor.instructions.add(new InsnNode(Opcodes.RETURN));
         return defaultConstructor;
+    }
+
+    private void initContext(ClassNode classNode, MethodNode defaultConstructor) {
+        defaultConstructor.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        // stack: this
+        defaultConstructor.instructions.add(new TypeInsnNode(Opcodes.NEW, "java/util/HashMap"));
+        // stack: this :: <hashMap>
+        defaultConstructor.instructions.add(new InsnNode(Opcodes.DUP));
+        // stack: this :: <hashMap> :: <hashMap>
+        defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/util/HashMap", "<init>", "()V"));
+        // stack: this :: <hashMap>
+        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(HashMap.class)));
     }
 
     private ClassNode createProcessorClassDefinition() {
