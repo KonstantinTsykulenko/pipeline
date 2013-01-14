@@ -100,9 +100,6 @@ public class ProcessorGenerator {
 
     private MethodNode createRunMethod(ClassNode classNode, Method method) {
         MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, "run", Type.getMethodDescriptor(method), null, null);
-        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
-        runMethod.instructions.add(new LdcInsnNode("I'm running!"));
-        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V"));
 
         createNodeInvocations(classNode, runMethod);
 

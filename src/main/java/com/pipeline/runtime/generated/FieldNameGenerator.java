@@ -25,8 +25,7 @@ public class FieldNameGenerator implements Iterable<String>{
 
         @Override
         public String next() {
-            sequenceNumber++;
-            return String.format(pattern, sequenceNumber);
+            return String.format(pattern, ++sequenceNumber);
         }
 
         @Override
