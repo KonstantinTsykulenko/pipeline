@@ -10,14 +10,14 @@ import java.util.List;
  * @author Konstantin Tsykulenko
  * @since 1/16/13
  */
-public abstract class AbstractMethodBodyGenerator implements  MethodBodyGenerator{
+public abstract class AbstractComplexMethodBodyGenerator implements  MethodBodyGenerator{
     private List<? extends MethodBodyGenerator> methodBodyGenerators;
 
-    public AbstractMethodBodyGenerator(List<? extends MethodBodyGenerator> methodBodyGenerators) {
+    public AbstractComplexMethodBodyGenerator(List<? extends MethodBodyGenerator> methodBodyGenerators) {
         this.methodBodyGenerators = methodBodyGenerators;
     }
 
-    public AbstractMethodBodyGenerator(MethodBodyGenerator methodBodyGenerator) {
+    public AbstractComplexMethodBodyGenerator(MethodBodyGenerator methodBodyGenerator) {
         this.methodBodyGenerators = Arrays.asList(methodBodyGenerator);
     }
 

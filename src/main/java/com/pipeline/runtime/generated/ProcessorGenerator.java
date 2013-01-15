@@ -145,13 +145,14 @@ public class ProcessorGenerator {
 
             String fieldName = nodeMapEntry.getKey();
 
-            MethodBodyGenerator methodBodyGenerator =
-                    new MethodInvoker(new FieldLoader(fieldName, actionClass), actionClass, methodToInvoke);
-            methodBodyGenerator.generateMethodBody(classNode, methodNode);
+            FieldLoader fieldLoader = new FieldLoader(fieldName, actionClass);
 
             List<ActionArgumentBinding> actionArgumentBindings =
                     getActionArgumentBinder().createActionArgumentBindings(methodToInvoke);
 
+            MethodBodyGenerator methodBodyGenerator =
+                    new MethodInvoker(fieldLoader, actionClass, methodToInvoke);
+            methodBodyGenerator.generateMethodBody(classNode, methodNode);
         }
     }
 

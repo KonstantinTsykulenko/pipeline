@@ -14,7 +14,7 @@ import java.util.List;
  * @author Konstantin Tsykulenko
  * @since 1/16/13
  */
-public class MethodInvoker extends AbstractMethodBodyGenerator {
+public class MethodInvoker extends AbstractComplexMethodBodyGenerator {
 
     private Class<?> ownerClass;
     private Method methodToInvoke;
