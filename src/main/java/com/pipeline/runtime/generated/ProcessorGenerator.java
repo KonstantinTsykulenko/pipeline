@@ -6,6 +6,10 @@ import com.pipeline.definition.Pipeline;
 import com.pipeline.runtime.ActionArgumentBinder;
 import com.pipeline.runtime.ActionArgumentBinding;
 import com.pipeline.runtime.Processor;
+import com.pipeline.runtime.generated.asm.method.FieldLoader;
+import com.pipeline.runtime.generated.asm.method.LocalVariableLoader;
+import com.pipeline.runtime.generated.asm.method.MethodBodyGenerator;
+import com.pipeline.runtime.generated.asm.method.MethodInvoker;
 import com.pipeline.runtime.reflection.ExecutionContext;
 import com.pipeline.util.AnnotationUtils;
 import org.objectweb.asm.ClassWriter;
@@ -116,24 +120,20 @@ public class ProcessorGenerator {
     }
 
     private void createInitialContextParameterBinding(ClassNode classNode, MethodNode runMethod) {
-        //load this
-        runMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        //load context field
-        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
-        //load 1st invocation arg
-        runMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
-
         Method method;
         try {
             method = ExecutionContext.class.getMethod("putAll", Map.class);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException(e);
         }
-        //invoke putAll
-        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-                Type.getInternalName(ExecutionContext.class),
-                method.getName(),
-                Type.getMethodDescriptor(method)));
+
+        MethodBodyGenerator methodBodyGenerator = new MethodInvoker(
+                Arrays.asList(
+                        new FieldLoader(CONTEXT_FIELD, ExecutionContext.class),
+                        new LocalVariableLoader(1)),
+                ExecutionContext.class,
+                method);
+        methodBodyGenerator.generateMethodBody(classNode, runMethod);
     }
 
     private void createNodeInvocations(ClassNode classNode, MethodNode methodNode) {
@@ -143,40 +143,15 @@ public class ProcessorGenerator {
 
             Method methodToInvoke = AnnotationUtils.getHanlderMethod(actionClass);
 
-            createNodeResultBinding(methodToInvoke, actionClass);
+            String fieldName = nodeMapEntry.getKey();
 
-            //stack: this
-            methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-            //stack: field
-            methodNode.instructions.add(new FieldInsnNode(Opcodes.GETFIELD,
-                    classNode.name,
-                    nodeMapEntry.getKey(),
-                    Type.getDescriptor(actionClass)));
-
+            MethodBodyGenerator methodBodyGenerator =
+                    new MethodInvoker(new FieldLoader(fieldName, actionClass), actionClass, methodToInvoke);
+            methodBodyGenerator.generateMethodBody(classNode, methodNode);
 
             List<ActionArgumentBinding> actionArgumentBindings =
                     getActionArgumentBinder().createActionArgumentBindings(methodToInvoke);
 
-            methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
-                    Type.getInternalName(actionClass),
-                    methodToInvoke.getName(),
-                    Type.getMethodDescriptor(methodToInvoke)));
-        }
-    }
-
-    private void createNodeResultBinding(Method methodToInvoke, Class<?> actionClass) {
-        if (methodToInvoke.getReturnType().equals(Void.class)) {
-            return;
-        }
-
-        ContextAttribute contextAttribute = AnnotationUtils.getContextAttribute(methodToInvoke);
-
-        String actionResultName;
-        if (contextAttribute != null) {
-            actionResultName = contextAttribute.value();
-        }
-        else {
-            actionResultName = actionClass.getName();
         }
     }
 
