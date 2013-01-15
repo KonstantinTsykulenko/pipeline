@@ -1,5 +1,6 @@
 package com.pipeline.util;
 
+import com.pipeline.annotation.ContextAttribute;
 import com.pipeline.annotation.HandlerMethod;
 
 import java.lang.annotation.Annotation;
@@ -21,7 +22,19 @@ public class AnnotationUtils {
         return null;
     }
 
+    public static <A extends Annotation> A getAnnotation(Method method, Class<A> annotationToFind) {
+        return method.getAnnotation(annotationToFind);
+    }
+
+    public static ContextAttribute getContextAttribute(Method method) {
+        return getAnnotation(method, ContextAttribute.class);
+    }
+
     public static Method getHanlderMethod(Class<?> clazz) {
         return getAnnotatedMethod(clazz, HandlerMethod.class);
+    }
+
+    public static Method getHanlderMethod(Object actionObject) {
+        return getAnnotatedMethod(actionObject.getClass(), HandlerMethod.class);
     }
 }

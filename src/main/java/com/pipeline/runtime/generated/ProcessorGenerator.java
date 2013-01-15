@@ -2,6 +2,8 @@ package com.pipeline.runtime.generated;
 
 import com.pipeline.definition.Node;
 import com.pipeline.definition.Pipeline;
+import com.pipeline.runtime.ActionArgumentBinder;
+import com.pipeline.runtime.ActionArgumentBinding;
 import com.pipeline.runtime.Processor;
 import com.pipeline.util.AnnotationUtils;
 import org.objectweb.asm.ClassWriter;
@@ -123,11 +125,18 @@ public class ProcessorGenerator {
 
             Method methodToInvoke = AnnotationUtils.getHanlderMethod(actionClass);
 
+            List<ActionArgumentBinding> actionArgumentBindings =
+                    getActionArgumentBinder().createActionArgumentBindings(methodToInvoke);
+
             methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
                     Type.getInternalName(actionClass),
                     methodToInvoke.getName(),
                     Type.getMethodDescriptor(methodToInvoke)));
         }
+    }
+
+    private ActionArgumentBinder getActionArgumentBinder() {
+        return new ActionArgumentBinder();
     }
 
     private void useContext(ClassNode classNode, MethodNode methodNode) {
