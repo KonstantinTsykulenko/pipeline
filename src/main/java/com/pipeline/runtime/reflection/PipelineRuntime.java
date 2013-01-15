@@ -33,9 +33,7 @@ public class PipelineRuntime {
 
     public Map<String, Object> run(Map<String, Object> contextMap) {
         ExecutionContext executionContext = new ExecutionContext();
-        for (Map.Entry<String, Object> entry : contextMap.entrySet()) {
-            executionContext.putObject(entry.getKey(), entry.getValue());
-        }
+        executionContext.putAll(contextMap);
         return run(executionContext);
     }
 

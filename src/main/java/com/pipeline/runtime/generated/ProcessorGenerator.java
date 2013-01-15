@@ -1,10 +1,12 @@
 package com.pipeline.runtime.generated;
 
+import com.pipeline.annotation.ContextAttribute;
 import com.pipeline.definition.Node;
 import com.pipeline.definition.Pipeline;
 import com.pipeline.runtime.ActionArgumentBinder;
 import com.pipeline.runtime.ActionArgumentBinding;
 import com.pipeline.runtime.Processor;
+import com.pipeline.runtime.reflection.ExecutionContext;
 import com.pipeline.util.AnnotationUtils;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -22,7 +24,8 @@ import java.util.*;
 public class ProcessorGenerator {
     private static final DynamicClassLoader pipelineRuntimeLoader =
             new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
-    public static final String CONTEXT_FIELD = "context";
+    public static final String CONTEXT_FIELD = "executionContext";
+    public static final String RUN_METHOD_NAME = "run";
 
     private ThreadLocal<Map<String, Node>> nodeToFieldMapping = new ThreadLocal<Map<String, Node>>();
 
@@ -65,7 +68,7 @@ public class ProcessorGenerator {
 
         Method method;
         try {
-            method = Processor.class.getMethod("run", Map.class);
+            method = Processor.class.getMethod(RUN_METHOD_NAME, Map.class);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException(e);
         }
@@ -101,29 +104,55 @@ public class ProcessorGenerator {
     }
 
     private MethodNode createRunMethod(ClassNode classNode, Method method) {
-        MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, "run", Type.getMethodDescriptor(method), null, null);
+        MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, RUN_METHOD_NAME, Type.getMethodDescriptor(method), null, null);
+
+        createInitialContextParameterBinding(classNode, runMethod);
 
         createNodeInvocations(classNode, runMethod);
-
-        useContext(classNode, runMethod);
 
         runMethod.instructions.add(new InsnNode(Opcodes.ACONST_NULL));
         runMethod.instructions.add(new InsnNode(Opcodes.ARETURN));
         return runMethod;
     }
 
+    private void createInitialContextParameterBinding(ClassNode classNode, MethodNode runMethod) {
+        //load this
+        runMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        //load context field
+        runMethod.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
+        //load 1st invocation arg
+        runMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+
+        Method method;
+        try {
+            method = ExecutionContext.class.getMethod("putAll", Map.class);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        }
+        //invoke putAll
+        runMethod.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,
+                Type.getInternalName(ExecutionContext.class),
+                method.getName(),
+                Type.getMethodDescriptor(method)));
+    }
+
     private void createNodeInvocations(ClassNode classNode, MethodNode methodNode) {
         for (Map.Entry<String, Node> nodeMapEntry : nodeToFieldMapping.get().entrySet()) {
+
+            Class<?> actionClass = nodeMapEntry.getValue().getAction().getClass();
+
+            Method methodToInvoke = AnnotationUtils.getHanlderMethod(actionClass);
+
+            createNodeResultBinding(methodToInvoke, actionClass);
+
             //stack: this
             methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
             //stack: field
-            Class<?> actionClass = nodeMapEntry.getValue().getAction().getClass();
             methodNode.instructions.add(new FieldInsnNode(Opcodes.GETFIELD,
                     classNode.name,
                     nodeMapEntry.getKey(),
                     Type.getDescriptor(actionClass)));
 
-            Method methodToInvoke = AnnotationUtils.getHanlderMethod(actionClass);
 
             List<ActionArgumentBinding> actionArgumentBindings =
                     getActionArgumentBinder().createActionArgumentBindings(methodToInvoke);
@@ -135,38 +164,28 @@ public class ProcessorGenerator {
         }
     }
 
+    private void createNodeResultBinding(Method methodToInvoke, Class<?> actionClass) {
+        if (methodToInvoke.getReturnType().equals(Void.class)) {
+            return;
+        }
+
+        ContextAttribute contextAttribute = AnnotationUtils.getContextAttribute(methodToInvoke);
+
+        String actionResultName;
+        if (contextAttribute != null) {
+            actionResultName = contextAttribute.value();
+        }
+        else {
+            actionResultName = actionClass.getName();
+        }
+    }
+
     private ActionArgumentBinder getActionArgumentBinder() {
         return new ActionArgumentBinder();
     }
 
-    private void useContext(ClassNode classNode, MethodNode methodNode) {
-        methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        // stack: this
-        methodNode.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(HashMap.class)));
-        // stack: hashmap
-        methodNode.instructions.add(new LdcInsnNode("some_test_param"));
-        // stack: hashmap :: key
-        methodNode.instructions.add(new LdcInsnNode("some_test_value"));
-        // stack: hashmap :: key :: value
-        methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/util/HashMap", "put", Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class), Type.getType(Object.class))));
-        // stack:
-        methodNode.instructions.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
-
-        methodNode.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        // stack: this
-        methodNode.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(HashMap.class)));
-        // stack: hashmap
-        methodNode.instructions.add(new LdcInsnNode("some_test_param"));
-        // stack: hashmap :: key
-        methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/util/HashMap", "get", Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class))));
-        // stack: hashmap :: value
-        methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "toString", Type.getMethodDescriptor(Type.getType(String.class))));
-
-        methodNode.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V"));
-    }
-
     private FieldNode createContextField() {
-        return new FieldNode(Opcodes.ACC_PUBLIC, "context", Type.getDescriptor(HashMap.class), null, null);
+        return new FieldNode(Opcodes.ACC_PUBLIC, CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class), null, null);
     }
 
     private MethodNode createDefaultConstructor(ClassNode classNode) {
@@ -184,13 +203,13 @@ public class ProcessorGenerator {
     private void initContext(ClassNode classNode, MethodNode defaultConstructor) {
         defaultConstructor.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
         // stack: this
-        defaultConstructor.instructions.add(new TypeInsnNode(Opcodes.NEW, "java/util/HashMap"));
-        // stack: this :: <hashMap>
+        defaultConstructor.instructions.add(new TypeInsnNode(Opcodes.NEW, Type.getInternalName(ExecutionContext.class)));
+        // stack: this :: <ExecutionContext>
         defaultConstructor.instructions.add(new InsnNode(Opcodes.DUP));
-        // stack: this :: <hashMap> :: <hashMap>
-        defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/util/HashMap", "<init>", "()V"));
-        // stack: this :: <hashMap>
-        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(HashMap.class)));
+        // stack: this :: <ExecutionContext> :: <ExecutionContext>
+        defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, Type.getInternalName(ExecutionContext.class), "<init>", "()V"));
+        // stack: this :: <ExecutionContext>
+        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
     }
 
     private ClassNode createProcessorClassDefinition() {

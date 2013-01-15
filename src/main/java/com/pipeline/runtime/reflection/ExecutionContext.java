@@ -55,7 +55,17 @@ public class ExecutionContext {
         contextMap.put(name, object);
     }
 
-    Map<String, Object> getContextMap() {
+    public void putAll(Map<String, Object> contextMap) {
+        if (contextMap == null) {
+            return;
+        }
+
+        for (Map.Entry<String, Object> entry : contextMap.entrySet()) {
+            putObject(entry.getKey(), entry.getValue());
+        }
+    }
+
+    public Map<String, Object> getContextMap() {
         return contextMap;
     }
 }
