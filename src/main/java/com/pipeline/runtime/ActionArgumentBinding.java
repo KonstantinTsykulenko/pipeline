@@ -5,31 +5,23 @@ package com.pipeline.runtime;
 * @since 1/15/13
 */
 public class ActionArgumentBinding {
-    private Class<?> argumentType;
-    private String argumentName;
+    private final Class<?> argumentType;
+    private final String argumentName;
 
     public ActionArgumentBinding(Class<?> argumentType, String argumentName) {
         this.argumentType = argumentType;
+        if (argumentName == null) {
+            this.argumentName = argumentType.getName();
+            return;
+        }
         this.argumentName = argumentName;
-    }
-
-    public boolean isNamedArgument() {
-        return getArgumentName() != null;
     }
 
     public Class<?> getArgumentType() {
         return argumentType;
     }
 
-    public void setArgumentType(Class<?> argumentType) {
-        this.argumentType = argumentType;
-    }
-
     public String getArgumentName() {
         return argumentName;
-    }
-
-    public void setArgumentName(String argumentName) {
-        this.argumentName = argumentName;
     }
 }

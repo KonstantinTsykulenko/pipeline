@@ -27,6 +27,7 @@ public class ActionArgumentBinder {
                 }
             }
             result.add(new ActionArgumentBinding(argumentType, argumentName));
+            ++index;
         }
 
         return result;

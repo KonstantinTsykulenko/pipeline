@@ -1,11 +1,8 @@
-package com.pipeline.runtime.generated.asm.method;
+package com.pipeline.runtime.generated.asm.wrapper;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Method;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.pipeline.runtime.generated.asm.method;
+package com.pipeline.runtime.generated.asm.wrapper;
 
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;

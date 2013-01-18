@@ -3,6 +3,7 @@ package com.pipeline.runtime.reflection;
 import com.pipeline.annotation.ContextAttribute;
 import com.pipeline.runtime.ActionArgumentBinder;
 import com.pipeline.runtime.ActionArgumentBinding;
+import com.pipeline.runtime.ExecutionContext;
 import com.pipeline.util.AnnotationUtils;
 
 import java.lang.reflect.Method;
@@ -63,13 +64,8 @@ class NodeRuntime {
         Object[] invocationParams = new Object[arguments.size()];
         int index = 0;
         for (ActionArgumentBinding argumentBinding : arguments) {
-            if (!argumentBinding.isNamedArgument()) {
-                invocationParams[index] = executionContext.getObject(argumentBinding.getArgumentType());
-            }
-            else {
                 invocationParams[index] = executionContext.getObject(argumentBinding.getArgumentName(),
                         argumentBinding.getArgumentType());
-            }
         }
         return invocationParams;
     }

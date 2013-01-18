@@ -2,7 +2,7 @@ package com.pipeline.runtime.reflection;
 
 import com.pipeline.definition.Node;
 import com.pipeline.definition.Pipeline;
-import com.pipeline.runtime.Processor;
+import com.pipeline.runtime.ExecutionContext;
 
 import java.util.LinkedList;
 import java.util.List;

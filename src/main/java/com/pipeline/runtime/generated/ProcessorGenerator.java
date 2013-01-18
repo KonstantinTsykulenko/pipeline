@@ -1,16 +1,13 @@
 package com.pipeline.runtime.generated;
 
-import com.pipeline.annotation.ContextAttribute;
 import com.pipeline.definition.Node;
 import com.pipeline.definition.Pipeline;
 import com.pipeline.runtime.ActionArgumentBinder;
 import com.pipeline.runtime.ActionArgumentBinding;
+import com.pipeline.runtime.ExecutionContext;
 import com.pipeline.runtime.Processor;
-import com.pipeline.runtime.generated.asm.method.FieldLoader;
-import com.pipeline.runtime.generated.asm.method.LocalVariableLoader;
-import com.pipeline.runtime.generated.asm.method.MethodBodyGenerator;
-import com.pipeline.runtime.generated.asm.method.MethodInvoker;
-import com.pipeline.runtime.reflection.ExecutionContext;
+import com.pipeline.runtime.generated.asm.wrapper.MethodBodyGenerator;
+import com.pipeline.runtime.generated.asm.wrapper.MethodBuilder;
 import com.pipeline.util.AnnotationUtils;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -21,6 +18,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static com.pipeline.runtime.generated.asm.wrapper.MethodBuilder.*;
+
 /**
  * @author Konstantin Tsykulenko
  * @since 1/10/13
@@ -28,13 +27,12 @@ import java.util.*;
 public class ProcessorGenerator {
     private static final DynamicClassLoader pipelineRuntimeLoader =
             new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
-    public static final String CONTEXT_FIELD = "executionContext";
-    public static final String RUN_METHOD_NAME = "run";
 
     private ThreadLocal<Map<String, Node>> nodeToFieldMapping = new ThreadLocal<Map<String, Node>>();
 
     public Processor getProcessor(Pipeline pipeline) {
-        Class<?> processorClass = pipelineRuntimeLoader.loadClass(createProcessorBytecode(pipeline));
+        byte[] processorBytecode = createProcessorBytecode(pipeline);
+        Class<?> processorClass = pipelineRuntimeLoader.loadClass(processorBytecode);
         try {
             Processor processor = (Processor) processorClass.newInstance();
             injectDependencies(processor, nodeToFieldMapping.get());
@@ -72,7 +70,7 @@ public class ProcessorGenerator {
 
         Method method;
         try {
-            method = Processor.class.getMethod(RUN_METHOD_NAME, Map.class);
+            method = Processor.class.getMethod(GeneratorConstants.RUN_METHOD_NAME, Map.class);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException(e);
         }
@@ -108,7 +106,7 @@ public class ProcessorGenerator {
     }
 
     private MethodNode createRunMethod(ClassNode classNode, Method method) {
-        MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, RUN_METHOD_NAME, Type.getMethodDescriptor(method), null, null);
+        MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, GeneratorConstants.RUN_METHOD_NAME, Type.getMethodDescriptor(method), null, null);
 
         createInitialContextParameterBinding(classNode, runMethod);
 
@@ -120,20 +118,8 @@ public class ProcessorGenerator {
     }
 
     private void createInitialContextParameterBinding(ClassNode classNode, MethodNode runMethod) {
-        Method method;
-        try {
-            method = ExecutionContext.class.getMethod("putAll", Map.class);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalStateException(e);
-        }
-
-        MethodBodyGenerator methodBodyGenerator = new MethodInvoker(
-                Arrays.asList(
-                        new FieldLoader(CONTEXT_FIELD, ExecutionContext.class),
-                        new LocalVariableLoader(1)),
-                ExecutionContext.class,
-                method);
-        methodBodyGenerator.generateMethodBody(classNode, runMethod);
+        Method method = GeneratorConstants.EXECUTION_CONTEXT_PUT_ALL;
+        callOn(getField(GeneratorConstants.CONTEXT_FIELD)).method(method).param(getLocalVariable(1)).writeTo(classNode, runMethod);
     }
 
     private void createNodeInvocations(ClassNode classNode, MethodNode methodNode) {
@@ -145,14 +131,21 @@ public class ProcessorGenerator {
 
             String fieldName = nodeMapEntry.getKey();
 
-            FieldLoader fieldLoader = new FieldLoader(fieldName, actionClass);
-
             List<ActionArgumentBinding> actionArgumentBindings =
                     getActionArgumentBinder().createActionArgumentBindings(methodToInvoke);
 
-            MethodBodyGenerator methodBodyGenerator =
-                    new MethodInvoker(fieldLoader, actionClass, methodToInvoke);
-            methodBodyGenerator.generateMethodBody(classNode, methodNode);
+            List<MethodBodyGenerator> params = new ArrayList<MethodBodyGenerator>(actionArgumentBindings.size());
+
+            for (ActionArgumentBinding argumentBinding : actionArgumentBindings) {
+                MethodBuilder builder = callOn(getField(GeneratorConstants.CONTEXT_FIELD)).
+                        method(GeneratorConstants.EXECUTION_CONTEXT_GET).
+                        params(value(argumentBinding.getArgumentName()),
+                                value(Type.getType(argumentBinding.getArgumentType())));
+                MethodBodyGenerator generator = cast(builder, argumentBinding.getArgumentType());
+                params.add(generator);
+            }
+
+            callOn(getField(fieldName)).method(methodToInvoke).params(params).writeTo(classNode, methodNode);
         }
     }
 
@@ -161,7 +154,7 @@ public class ProcessorGenerator {
     }
 
     private FieldNode createContextField() {
-        return new FieldNode(Opcodes.ACC_PUBLIC, CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class), null, null);
+        return new FieldNode(Opcodes.ACC_PUBLIC, GeneratorConstants.CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class), null, null);
     }
 
     private MethodNode createDefaultConstructor(ClassNode classNode) {
@@ -185,7 +178,7 @@ public class ProcessorGenerator {
         // stack: this :: <ExecutionContext> :: <ExecutionContext>
         defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, Type.getInternalName(ExecutionContext.class), "<init>", "()V"));
         // stack: this :: <ExecutionContext>
-        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
+        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, GeneratorConstants.CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
     }
 
     private ClassNode createProcessorClassDefinition() {

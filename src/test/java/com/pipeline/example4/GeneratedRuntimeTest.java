@@ -10,7 +10,7 @@ import com.pipeline.runtime.generated.ProcessorGenerator;
 import org.junit.Test;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/10/13
  */
 public class GeneratedRuntimeTest {
