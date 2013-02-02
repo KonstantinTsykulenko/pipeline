@@ -13,8 +13,6 @@ import java.util.List;
  */
 public class PipelineRuntimeBuilder {
     private PipelineBuilder pipelineBuilder = new PipelineBuilder();
-    private static final int DEFAULT_NODE_CAPACITY = 20;
-    private List<Node> nodes = new ArrayList<Node>(DEFAULT_NODE_CAPACITY);
 
     public PipelineRuntime buildPipeline() {
         PipelineRuntime pipelineRuntime = new PipelineRuntime(pipelineBuilder.buildPipeline());
