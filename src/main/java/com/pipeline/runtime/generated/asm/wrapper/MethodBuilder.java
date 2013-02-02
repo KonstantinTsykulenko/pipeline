@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * @author Konstantin Tsykulenko
+ * @author KonstantinTsykulenko
  * @since 1/17/13
  */
 public class MethodBuilder {
