@@ -13,6 +13,7 @@ public abstract class DefaultSettings {
 
     public static final int ASM_API_VERSION = Opcodes.ASM4;
     public static final int JAVA_VERSION = Opcodes.V1_6;
-    public static final int ACCESS_MODIFIER = Opcodes.ACC_PUBLIC;
+    public static final int METHOD_ACCESS_MODIFIER = Opcodes.ACC_PUBLIC;
+    public static final int FIELD_ACCESS_MODIFIER = Opcodes.ACC_PRIVATE;
     public static final String SUPER_CLASS = "java/lang/Object";
 }

@@ -1,5 +1,6 @@
 package org.objectweb.asm.wrapper;
 
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -19,11 +20,13 @@ public class ClassBuilder {
 
     private String superClassName = DefaultSettings.SUPER_CLASS;
 
-    private int accessModifier = DefaultSettings.ACCESS_MODIFIER;
+    private int accessModifier = DefaultSettings.METHOD_ACCESS_MODIFIER;
 
     private Set<Class> interfaces = new HashSet<Class>();
 
     private Set<MethodNode> constructors = new HashSet<MethodNode>();
+
+    private Map<String, FieldBuilder> fields = new HashMap<String, FieldBuilder>();
 
     /////////////////////////////////////////////
     // METHODS
@@ -41,8 +44,42 @@ public class ClassBuilder {
         return this;
     }
 
+    public ClassBuilder field(FieldBuilder fieldBuilder) {
+        if (fields.containsKey(fieldBuilder.getFieldName())) {
+            throw new IllegalStateException("Field with name " + fieldBuilder.getFieldName() + " is already defined");
+        }
+        fields.put(fieldBuilder.getFieldName(), fieldBuilder);
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
-    public ClassNode build() {
+    public byte[] build() {
+        ClassNode classNode = buildClass();
+
+        classNode.fields.addAll(buildFields());
+
+        return produceBytecode(classNode);
+    }
+
+    private Collection<FieldNode> buildFields() {
+        HashSet<FieldNode> fieldNodes = new HashSet<FieldNode>();
+
+        for (FieldBuilder fieldBuilder : fields.values()) {
+            fieldNodes.add(fieldBuilder.build());
+        }
+
+        return fieldNodes;
+    }
+
+    private byte[] produceBytecode(ClassNode classNode) {
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        classNode.accept(cw);
+
+        return cw.toByteArray();
+    }
+
+    @SuppressWarnings("unchecked")
+    private ClassNode buildClass() {
         ClassNode classNode = new ClassNode(DefaultSettings.ASM_API_VERSION);
 
         classNode.version = DefaultSettings.JAVA_VERSION;

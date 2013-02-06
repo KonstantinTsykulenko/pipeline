@@ -73,4 +73,26 @@ public class ClassBuilderTest {
 
         assertNotNull(clazz.newInstance());
     }
+
+    @Test
+    public void testSeveralAttributes() throws NoSuchFieldException {
+        ClassBuilder classBuilder =
+                builder.publicClass("TestClass").
+                        field(new FieldBuilder(String.class, "fieldOne")).
+                        field(new FieldBuilder(String.class, "fieldTwo")).
+                        field(new FieldBuilder(String.class, "fieldThree"));
+
+        Class<?> clazz = classLoader.loadClass(classBuilder.build());
+
+        assertNotNull(clazz.getDeclaredField("fieldOne"));
+        assertNotNull(clazz.getDeclaredField("fieldTwo"));
+        assertNotNull(clazz.getDeclaredField("fieldThree"));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testTwoFieldsCannotHaveSameName() {
+        builder.publicClass("TestClass").
+                field(new FieldBuilder(String.class, "sameField")).
+                field(new FieldBuilder(Object.class, "sameField")).build();
+    }
 }

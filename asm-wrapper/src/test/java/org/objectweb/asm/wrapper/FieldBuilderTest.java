@@ -1,0 +1,83 @@
+package org.objectweb.asm.wrapper;
+
+import org.junit.Test;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+/**
+ * @author Alex Chychkan
+ * @since 2013/02/06
+ */
+public class FieldBuilderTest {
+
+    /////////////////////////////////////////////
+    // TEST METHODS
+
+    @Test
+    public void testAddFieldToClass() throws NoSuchFieldException {
+        ClassBuilder classBuilder = new ClassBuilder().publicClass("TestClass").
+                field(new FieldBuilder(Object.class, "someField"));
+
+        Class<?> clazz = loadClass(classBuilder);
+
+        assertNotNull(clazz.getDeclaredField("someField"));
+    }
+
+    @Test
+    public void testByDefaultFieldIsPrivate() throws NoSuchFieldException {
+        FieldBuilder fieldBuilder = new FieldBuilder(Object.class, "someField");
+
+        Class<?> clazz = wrapIntoClass(fieldBuilder);
+
+        Field field = clazz.getDeclaredField("someField");
+
+        assertTrue(Modifier.isPrivate(field.getModifiers()));
+    }
+
+    @Test
+    public void testFieldType() throws NoSuchFieldException {
+        FieldBuilder doubleField = new FieldBuilder(Double.class, "doubleField");
+
+        Class<?> clazz = wrapIntoClass(doubleField);
+
+        Field field = clazz.getDeclaredField("doubleField");
+
+        assertEquals(Double.class, field.getType());
+    }
+
+    @Test
+    public void testPublicStaticField() throws NoSuchFieldException {
+        FieldBuilder fieldBuilder =
+                new FieldBuilder(String.class, "stringField").isPublic().isStatic();
+
+        Class<?> clazz = wrapIntoClass(fieldBuilder);
+
+        Field field = clazz.getDeclaredField("stringField");
+
+        assertTrue(Modifier.isPublic(field.getModifiers()));
+        assertTrue(Modifier.isStatic(field.getModifiers()));
+    }
+
+    /////////////////////////////////////////////
+    // HELPER METHODS
+
+    private Class<?> wrapIntoClass(FieldBuilder ...fieldBuilders) {
+        ClassBuilder classBuilder = new ClassBuilder().publicClass("TestClass");
+
+        for (FieldBuilder fieldBuilder : fieldBuilders) {
+            classBuilder.field(fieldBuilder);
+        }
+
+        return loadClass(classBuilder);
+    }
+
+    private Class<?> loadClass(ClassBuilder classBuilder) {
+        TestDynamicClassLoader classLoader = new TestDynamicClassLoader(Thread.currentThread().getContextClassLoader());
+        return classLoader.loadClass(classBuilder.build());
+    }
+}
