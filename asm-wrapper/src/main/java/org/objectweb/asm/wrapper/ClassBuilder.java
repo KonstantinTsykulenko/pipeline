@@ -16,27 +16,33 @@ public class ClassBuilder {
     /////////////////////////////////////////////
     // ATTRIBUTES
 
-    private String className;
+    private final String className;
 
-    private String superClassName = DefaultSettings.SUPER_CLASS;
+    private int accessModifier;
 
-    private int accessModifier = DefaultSettings.METHOD_ACCESS_MODIFIER;
+    private String superClassName;
 
-    private Set<Class> interfaces = new HashSet<Class>();
+    private Set<Class> interfaces;
 
-    private Set<MethodNode> constructors = new HashSet<MethodNode>();
+    private Set<MethodNode> constructors;
 
-    private Map<String, FieldBuilder> fields = new HashMap<String, FieldBuilder>();
+    private Map<String, FieldBuilder> fields;
+
+    /////////////////////////////////////////////
+    // CONSTRUCTORS
+
+    public ClassBuilder(String className) {
+        this.className = className.replace('.', '/');
+        this.accessModifier = DefaultSettings.METHOD_ACCESS_MODIFIER;
+        this.superClassName = DefaultSettings.SUPER_CLASS;
+
+        this.interfaces = new HashSet<Class>();
+        this.constructors = new HashSet<MethodNode>();
+        this.fields = new HashMap<String, FieldBuilder>();
+    }
 
     /////////////////////////////////////////////
     // METHODS
-
-    public ClassBuilder publicClass(String className) {
-        this.className = className.replace('.', '/');
-        this.accessModifier = Opcodes.ACC_PUBLIC;
-
-        return this;
-    }
 
     public ClassBuilder implementing(Class ... interfaces) {
         this.interfaces.addAll(Arrays.asList(interfaces));

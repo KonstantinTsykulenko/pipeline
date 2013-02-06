@@ -1,6 +1,5 @@
 package org.objectweb.asm.wrapper;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.Serializable;
@@ -17,72 +16,50 @@ import static org.junit.Assert.assertTrue;
 public class ClassBuilderTest {
 
     /////////////////////////////////////////////
-    // ATTRIBUTES
-
-    private TestDynamicClassLoader classLoader;
-    private ClassBuilder builder;
-
-    /////////////////////////////////////////////
-    // METHODS
-
-    @Before
-    public void setUp() {
-        builder = new ClassBuilder();
-        classLoader = new TestDynamicClassLoader(Thread.currentThread().getContextClassLoader());
-    }
+    // TEST METHODS
 
     @Test
-    public void testBuildReturnsNotNull() {
-        assertNotNull(builder.publicClass("TestClass").build());
+    public void testBuildReturnsBytecode() {
+        assertNotNull(new ClassBuilder("TestClass").build());
     }
 
     @Test
     public void testClassNameIsAsSpecified() {
-        String className = "com.some.package.test.SomeClass";
+        Class<?> clazz = loadClass(new ClassBuilder("com.some.package.test.SomeClass"));
 
-        ClassBuilder someClass = builder.publicClass(className);
-
-        Class<?> clazz = classLoader.loadClass(someClass.build());
-
-        assertEquals(className, clazz.getCanonicalName());
+        assertEquals("com.some.package.test.SomeClass", clazz.getCanonicalName());
     }
 
     @Test
-    public void testClassIsPublic() {
-        ClassBuilder publicClass = builder.publicClass("SomePublicClass");
-
-        Class<?> clazz = classLoader.loadClass(publicClass.build());
+    public void testByDefaultClassIsPublic() {
+        Class<?> clazz = loadClass(new ClassBuilder("SomePublicClass"));
 
         assertTrue(Modifier.isPublic(clazz.getModifiers()));
     }
 
     @Test
-    public void testImplements() {
-        ClassBuilder serializableClass = builder.publicClass("SerializableClass").implementing(Serializable.class);
-
-        Class<?> clazz = classLoader.loadClass(serializableClass.build());
+    public void testClassImplementsAnInterface() {
+        Class<?> clazz = loadClass(new ClassBuilder("SerializableClass").implementing(Serializable.class));
 
         assertTrue(Serializable.class.isAssignableFrom(clazz));
     }
 
     @Test
     public void testDefaultDefaultConstructor() throws IllegalAccessException, InstantiationException {
-        ClassBuilder classWithDefaultConstructor = builder.publicClass("ClassWithDefaultConstructor");
-
-        Class<?> clazz = classLoader.loadClass(classWithDefaultConstructor.build());
+        Class<?> clazz = loadClass(new ClassBuilder("ClassWithDefaultConstructor"));
 
         assertNotNull(clazz.newInstance());
     }
 
     @Test
     public void testSeveralAttributes() throws NoSuchFieldException {
-        ClassBuilder classBuilder =
-                builder.publicClass("TestClass").
+        ClassBuilder builder =
+                new ClassBuilder("TestClass").
                         field(new FieldBuilder(String.class, "fieldOne")).
                         field(new FieldBuilder(String.class, "fieldTwo")).
                         field(new FieldBuilder(String.class, "fieldThree"));
 
-        Class<?> clazz = classLoader.loadClass(classBuilder.build());
+        Class<?> clazz = loadClass(builder);
 
         assertNotNull(clazz.getDeclaredField("fieldOne"));
         assertNotNull(clazz.getDeclaredField("fieldTwo"));
@@ -91,8 +68,16 @@ public class ClassBuilderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testTwoFieldsCannotHaveSameName() {
-        builder.publicClass("TestClass").
+        new ClassBuilder("TestClass").
                 field(new FieldBuilder(String.class, "sameField")).
                 field(new FieldBuilder(Object.class, "sameField")).build();
+    }
+
+    /////////////////////////////////////////////
+    // HELPER METHODS
+
+    private Class<?> loadClass(ClassBuilder classBuilder) {
+        TestDynamicClassLoader classLoader = new TestDynamicClassLoader(Thread.currentThread().getContextClassLoader());
+        return classLoader.loadClass(classBuilder.build());
     }
 }

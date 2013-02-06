@@ -20,8 +20,9 @@ public class FieldBuilderTest {
 
     @Test
     public void testAddFieldToClass() throws NoSuchFieldException {
-        ClassBuilder classBuilder = new ClassBuilder().publicClass("TestClass").
-                field(new FieldBuilder(Object.class, "someField"));
+        ClassBuilder classBuilder =
+                new ClassBuilder("TestClass").
+                        field(new FieldBuilder(Object.class, "someField"));
 
         Class<?> clazz = loadClass(classBuilder);
 
@@ -67,7 +68,7 @@ public class FieldBuilderTest {
     // HELPER METHODS
 
     private Class<?> wrapIntoClass(FieldBuilder ...fieldBuilders) {
-        ClassBuilder classBuilder = new ClassBuilder().publicClass("TestClass");
+        ClassBuilder classBuilder = new ClassBuilder("TestClass");
 
         for (FieldBuilder fieldBuilder : fieldBuilders) {
             classBuilder.field(fieldBuilder);
