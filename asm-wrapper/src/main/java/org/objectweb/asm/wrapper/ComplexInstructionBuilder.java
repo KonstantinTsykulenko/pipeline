@@ -2,7 +2,6 @@ package org.objectweb.asm.wrapper;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,3 +49,4 @@ public abstract class ComplexInstructionBuilder extends InstructionBuilder {
         this.instructionBuilders = instructionBuilders;
     }
 }
+

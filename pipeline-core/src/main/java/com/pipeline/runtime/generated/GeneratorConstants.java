@@ -56,5 +56,6 @@ class GeneratorConstants {
         }
     }
 
-    private GeneratorConstants() {}
+    private GeneratorConstants() {
+    }
 }

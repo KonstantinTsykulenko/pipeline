@@ -6,7 +6,7 @@ import java.util.Iterator;
  * @author Konstantin Tsykulenko
  * @since 1/14/13
  */
-public class FieldNameGenerator implements Iterable<String>{
+public class FieldNameGenerator implements Iterable<String> {
 
     private static final String pattern = "_f%d";
     private int sequenceNumber = 1;

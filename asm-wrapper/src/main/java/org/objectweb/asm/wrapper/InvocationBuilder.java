@@ -2,7 +2,9 @@ package org.objectweb.asm.wrapper;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -18,7 +20,7 @@ public class InvocationBuilder extends ComplexInstructionBuilder {
     private Method methodToInvoke;
     private Invokable invocationTarget;
 
-    private InvocationBuilder() {}
+    private InvocationBuilder() { }
 
     @Override
     protected List<AbstractInsnNode> preBuild() {

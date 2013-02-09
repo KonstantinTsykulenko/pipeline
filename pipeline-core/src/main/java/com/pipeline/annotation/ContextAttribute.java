@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * @since 1/5/13
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.PARAMETER, ElementType.METHOD})
+@Target({ElementType.PARAMETER, ElementType.METHOD })
 public @interface ContextAttribute {
     String value();
 }

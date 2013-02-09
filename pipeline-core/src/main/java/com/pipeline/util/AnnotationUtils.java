@@ -11,6 +11,8 @@ import java.lang.reflect.Method;
  * @since 1/15/13
  */
 public class AnnotationUtils {
+    private AnnotationUtils() { }
+
     public static <A extends Annotation> Method getAnnotatedMethod(Class<?> clazz, Class<A> annotationToFind) {
         for (Method method : clazz.getMethods()) {
             for (Annotation annotation : method.getDeclaredAnnotations()) {

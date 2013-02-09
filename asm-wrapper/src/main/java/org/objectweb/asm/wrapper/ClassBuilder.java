@@ -3,9 +3,22 @@ package org.objectweb.asm.wrapper;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.objectweb.asm.wrapper.FieldBuilder._field;
 
@@ -14,6 +27,7 @@ import static org.objectweb.asm.wrapper.FieldBuilder._field;
  * @since 2013/02/05
  */
 public class ClassBuilder {
+    public static final float DEFAULT_HASHSET_LOAD_FACTOR = .75f;
 
     /////////////////////////////////////////////
     // ATTRIBUTES
@@ -130,7 +144,7 @@ public class ClassBuilder {
      * @return HashSet with capacity enough to fit a given number of elements without resizing
      */
     private <T> HashSet<T> createFittingHashSet(int numElements) {
-        return new HashSet<T>((int) (numElements/.75f) + 1);
+        return new HashSet<T>((int) (numElements / DEFAULT_HASHSET_LOAD_FACTOR) + 1);
     }
 
     private byte[] produceBytecode(ClassNode classNode) {

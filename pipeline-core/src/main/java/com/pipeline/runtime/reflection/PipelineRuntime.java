@@ -38,12 +38,14 @@ public class PipelineRuntime {
     }
 
     public Map<String, Object> run(ExecutionContext executionContext) {
-        if (executionContext == null)
+        if (executionContext == null) {
             throw new IllegalArgumentException("Execution context can not be null");
+        }
 
         for (NodeRuntime nodeRuntime : nodeRuntimeList) {
             nodeRuntime.run(executionContext);
         }
+
         return executionContext.getContextMap();
     }
 }

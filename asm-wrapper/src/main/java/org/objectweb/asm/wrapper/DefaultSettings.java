@@ -15,7 +15,7 @@ class DefaultSettings {
     /**
      * not designed for inheritance
      */
-    private DefaultSettings() {}
+    private DefaultSettings() { }
 
     /////////////////////////////////////////////
     // CONSTANTS
