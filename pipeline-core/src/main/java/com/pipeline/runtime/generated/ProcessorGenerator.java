@@ -13,10 +13,6 @@ import org.objectweb.asm.wrapper.FieldBuilder;
 import org.objectweb.asm.wrapper.InstructionBuilder;
 import org.objectweb.asm.wrapper.InvocationBuilder;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -46,15 +42,6 @@ public class ProcessorGenerator {
 
     public Processor getProcessor(Pipeline pipeline) {
         byte[] processorBytecode = createProcessorBytecode(pipeline);
-        try {
-            OutputStream outputStream = new FileOutputStream("carp.class");
-            outputStream.write(processorBytecode);
-            outputStream.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
         Class<?> processorClass = pipelineRuntimeLoader.loadClass(processorBytecode);
         try {
             Processor processor = (Processor) processorClass.newInstance();
@@ -174,18 +161,6 @@ public class ProcessorGenerator {
     private ActionArgumentBinder getActionArgumentBinder() {
         return new ActionArgumentBinder();
     }
-
-//    private void initContext(ClassNode classNode, MethodNode defaultConstructor) {
-//        defaultConstructor.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-//        // stack: this
-//        defaultConstructor.instructions.add(new TypeInsnNode(Opcodes.NEW, Type.getInternalName(ExecutionContext.class)));
-//        // stack: this :: <ExecutionContext>
-//        defaultConstructor.instructions.add(new InsnNode(Opcodes.DUP));
-//        // stack: this :: <ExecutionContext> :: <ExecutionContext>
-//        defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, Type.getInternalName(ExecutionContext.class), "<init>", "()V"));
-//        // stack: this :: <ExecutionContext>
-//        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, GeneratorConstants.CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
-//    }
 
     private String getProcessorName() {
         return Processor.class.getCanonicalName() + definedProcessors.incrementAndGet();
