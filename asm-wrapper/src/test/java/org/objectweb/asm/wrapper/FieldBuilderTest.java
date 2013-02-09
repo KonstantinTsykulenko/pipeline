@@ -8,6 +8,8 @@ import java.lang.reflect.Modifier;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.objectweb.asm.wrapper.ClassBuilder._class;
+import static org.objectweb.asm.wrapper.FieldBuilder._field;
 
 /**
  * @author Alex Chychkan
@@ -20,9 +22,7 @@ public class FieldBuilderTest {
 
     @Test
     public void testAddFieldToClass() throws NoSuchFieldException {
-        ClassBuilder classBuilder =
-                new ClassBuilder("TestClass").
-                        field(new FieldBuilder(Object.class, "someField"));
+        ClassBuilder classBuilder = _class("TestClass").field(Object.class, "someField");
 
         Class<?> clazz = loadClass(classBuilder);
 
@@ -31,7 +31,7 @@ public class FieldBuilderTest {
 
     @Test
     public void testByDefaultFieldIsPrivate() throws NoSuchFieldException {
-        FieldBuilder fieldBuilder = new FieldBuilder(Object.class, "someField");
+        FieldBuilder fieldBuilder = _field(Object.class, "someField");
 
         Class<?> clazz = wrapIntoClass(fieldBuilder);
 
@@ -42,7 +42,7 @@ public class FieldBuilderTest {
 
     @Test
     public void testFieldType() throws NoSuchFieldException {
-        FieldBuilder doubleField = new FieldBuilder(Double.class, "doubleField");
+        FieldBuilder doubleField = _field(Double.class, "doubleField");
 
         Class<?> clazz = wrapIntoClass(doubleField);
 
@@ -53,8 +53,7 @@ public class FieldBuilderTest {
 
     @Test
     public void testPublicStaticField() throws NoSuchFieldException {
-        FieldBuilder fieldBuilder =
-                new FieldBuilder(String.class, "stringField").isPublic().isStatic();
+        FieldBuilder fieldBuilder = _field(String.class, "stringField").isPublic().isStatic();
 
         Class<?> clazz = wrapIntoClass(fieldBuilder);
 
@@ -68,7 +67,7 @@ public class FieldBuilderTest {
     // HELPER METHODS
 
     private Class<?> wrapIntoClass(FieldBuilder ...fieldBuilders) {
-        ClassBuilder classBuilder = new ClassBuilder("TestClass");
+        ClassBuilder classBuilder = _class("TestClass");
 
         for (FieldBuilder fieldBuilder : fieldBuilders) {
             classBuilder.field(fieldBuilder);

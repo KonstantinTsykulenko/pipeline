@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import java.util.List;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/18/13
  */
 public class Caster extends AbstractComplexMethodBodyGenerator {

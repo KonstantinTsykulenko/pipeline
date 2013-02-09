@@ -8,6 +8,7 @@ import java.lang.reflect.Modifier;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.objectweb.asm.wrapper.ClassBuilder._class;
 
 /**
  * @author Alex Chychkan
@@ -20,46 +21,43 @@ public class ClassBuilderTest {
 
     @Test
     public void testBuildReturnsBytecode() {
-        assertNotNull(new ClassBuilder("TestClass").build());
+        assertNotNull(_class("TestClass").build());
     }
 
     @Test
     public void testClassNameIsAsSpecified() {
-        Class<?> clazz = loadClass(new ClassBuilder("com.some.package.test.SomeClass"));
+        Class<?> clazz = loadClass(_class("com.some.package.test.SomeClass"));
 
         assertEquals("com.some.package.test.SomeClass", clazz.getCanonicalName());
     }
 
     @Test
     public void testByDefaultClassIsPublic() {
-        Class<?> clazz = loadClass(new ClassBuilder("SomePublicClass"));
+        Class<?> clazz = loadClass(_class("SomePublicClass"));
 
         assertTrue(Modifier.isPublic(clazz.getModifiers()));
     }
 
     @Test
     public void testClassImplementsAnInterface() {
-        Class<?> clazz = loadClass(new ClassBuilder("SerializableClass").implementing(Serializable.class));
+        Class<?> clazz = loadClass(_class("SerializableClass").implementing(Serializable.class));
 
         assertTrue(Serializable.class.isAssignableFrom(clazz));
     }
 
     @Test
     public void testDefaultDefaultConstructor() throws IllegalAccessException, InstantiationException {
-        Class<?> clazz = loadClass(new ClassBuilder("ClassWithDefaultConstructor"));
+        Class<?> clazz = loadClass(_class("ClassWithDefaultConstructor"));
 
         assertNotNull(clazz.newInstance());
     }
 
     @Test
     public void testSeveralAttributes() throws NoSuchFieldException {
-        ClassBuilder builder =
-                new ClassBuilder("TestClass").
-                        field(new FieldBuilder(String.class, "fieldOne")).
-                        field(new FieldBuilder(String.class, "fieldTwo")).
-                        field(new FieldBuilder(String.class, "fieldThree"));
-
-        Class<?> clazz = loadClass(builder);
+        Class<?> clazz = loadClass(_class("TestClass").
+                field(String.class, "fieldOne").
+                field(String.class, "fieldTwo").
+                field(String.class, "fieldThree"));
 
         assertNotNull(clazz.getDeclaredField("fieldOne"));
         assertNotNull(clazz.getDeclaredField("fieldTwo"));
@@ -68,9 +66,9 @@ public class ClassBuilderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testTwoFieldsCannotHaveSameName() {
-        new ClassBuilder("TestClass").
-                field(new FieldBuilder(String.class, "sameField")).
-                field(new FieldBuilder(Object.class, "sameField")).build();
+        _class("TestClass").
+                field(String.class, "sameField").
+                field(Object.class, "sameField").build();
     }
 
     /////////////////////////////////////////////

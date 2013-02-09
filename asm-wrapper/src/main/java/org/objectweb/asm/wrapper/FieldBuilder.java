@@ -24,7 +24,7 @@ public class FieldBuilder {
     /////////////////////////////////////////////
     // CONSTRUCTORS
 
-    public FieldBuilder(Class<?> fieldType, String fieldName) {
+    private FieldBuilder(Class<?> fieldType, String fieldName) {
         this.fieldType = fieldType;
         this.fieldName = fieldName;
         this.accessModifiers = DefaultSettings.FIELD_ACCESS_MODIFIER;
@@ -33,6 +33,10 @@ public class FieldBuilder {
 
     /////////////////////////////////////////////
     // METHODS
+
+    public static FieldBuilder _field(Class<?> fieldType, String fieldName) {
+        return new FieldBuilder(fieldType, fieldName);
+    }
 
     public FieldBuilder isPublic() {
         accessModifiers = Opcodes.ACC_PUBLIC;

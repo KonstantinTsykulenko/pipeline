@@ -7,6 +7,8 @@ import org.objectweb.asm.tree.*;
 
 import java.util.*;
 
+import static org.objectweb.asm.wrapper.FieldBuilder._field;
+
 /**
  * @author Alex Chychkan
  * @since 2013/02/05
@@ -31,7 +33,7 @@ public class ClassBuilder {
     /////////////////////////////////////////////
     // CONSTRUCTORS
 
-    public ClassBuilder(String className) {
+    private ClassBuilder(String className) {
         this.className = className.replace('.', '/');
         this.accessModifier = DefaultSettings.METHOD_ACCESS_MODIFIER;
         this.superClassName = DefaultSettings.SUPER_CLASS;
@@ -44,10 +46,21 @@ public class ClassBuilder {
     /////////////////////////////////////////////
     // METHODS
 
+    public static ClassBuilder _class(String className) {
+        return new ClassBuilder(className);
+    }
+
     public ClassBuilder implementing(Class ... interfaces) {
         this.interfaces.addAll(Arrays.asList(interfaces));
 
         return this;
+    }
+
+    /**
+     * Convenience method to add a field without using any {@link FieldBuilder} methods
+     */
+    public ClassBuilder field(Class<?> fieldType, String fieldName) {
+        return field(_field(fieldType, fieldName));
     }
 
     public ClassBuilder field(FieldBuilder fieldBuilder) {
