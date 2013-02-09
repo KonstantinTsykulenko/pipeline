@@ -14,7 +14,7 @@ import static org.objectweb.asm.wrapper.ClassBuilder._class;
  * @author Alex Chychkan
  * @since 2013/02/05
  */
-public class ClassBuilderTest {
+public class ClassBuilderTest extends AbstractAsmWrapperTest {
 
     /////////////////////////////////////////////
     // TEST METHODS
@@ -69,13 +69,5 @@ public class ClassBuilderTest {
         _class("TestClass").
                 field(String.class, "sameField").
                 field(Object.class, "sameField").build();
-    }
-
-    /////////////////////////////////////////////
-    // HELPER METHODS
-
-    private Class<?> loadClass(ClassBuilder classBuilder) {
-        TestDynamicClassLoader classLoader = new TestDynamicClassLoader(Thread.currentThread().getContextClassLoader());
-        return classLoader.loadClass(classBuilder.build());
     }
 }

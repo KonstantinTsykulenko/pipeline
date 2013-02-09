@@ -1,79 +1,58 @@
 package org.objectweb.asm.wrapper;
 
-import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @author KonstantinTsykulenko
+ * @author Konstantin Tsykulenko
  * @since 1/17/13
  */
 public class MethodBuilder {
 
-    private Method methodToInvoke;
-    private ReferenceLoader referenceToInvokeOn;
-    private List<MethodBodyGenerator> params = new ArrayList<MethodBodyGenerator>(6);
+    private Method methodSignature;
+    private List<InstructionBuilder> instructions;
 
-    private MethodBuilder() {}
-
-    public static MethodBuilder callOn(ReferenceLoader referenceLoader) {
-        MethodBuilder methodBuilder = new MethodBuilder();
-        methodBuilder.referenceToInvokeOn = referenceLoader;
-        return methodBuilder;
+    private MethodBuilder(Method signature) {
+        instructions = new LinkedList<InstructionBuilder>();
+        methodSignature = signature;
     }
 
-    public static ReferenceLoader getField(String fieldName) {
-        FieldLoader fieldLoader = new FieldLoader(fieldName);
-        return fieldLoader;
+    public static MethodBuilder _method(Method signature) {
+        return new MethodBuilder(signature);
     }
 
-    public static ReferenceLoader getLocalVariable(int index) {
-        LocalVariableLoader localVariableLoader = new LocalVariableLoader(index);
-        return localVariableLoader;
+    MethodNode build() {
+        MethodNode methodNode = buildMethodNode();
+        for (InstructionBuilder instructionBuilder : instructions) {
+            for (AbstractInsnNode instrNode : instructionBuilder.build()) {
+                methodNode.instructions.add(instrNode);
+            }
+        }
+        return methodNode;
     }
 
-    public static ReferenceLoader value(Object value) {
-        ValueLoader valueLoader = new ValueLoader(value);
-        return valueLoader;
+    private MethodNode buildMethodNode() {
+        return new MethodNode(DefaultSettings.ASM_API_VERSION,
+                DefaultSettings.METHOD_ACCESS_MODIFIER,
+                methodSignature.getName(),
+                Type.getMethodDescriptor(methodSignature),
+                null /* signature : not used for now */,
+                null /* exceptions : not used for now */);
     }
 
-    public static MethodBodyGenerator cast(MethodBuilder builder, Class<?> to) {
-        Caster caster = new Caster(builder.getGenerator(), to);
-        return caster;
-    }
-
-    public MethodBuilder method(Method method) {
-        methodToInvoke = method;
+    public MethodBuilder $(List<InstructionBuilder> instructionBuilders) {
+        instructions.addAll(instructionBuilders);
         return this;
     }
 
-    public MethodBuilder param(MethodBodyGenerator paramSource) {
-        params.add(paramSource);
+    public MethodBuilder $(InstructionBuilder... instructionBuilders) {
+        instructions.addAll(Arrays.asList(instructionBuilders));
         return this;
-    }
-
-    public MethodBuilder params(MethodBodyGenerator... paramSources) {
-        params.addAll(Arrays.asList(paramSources));
-        return this;
-    }
-
-    public MethodBuilder params(List<MethodBodyGenerator> paramSources) {
-        params.addAll(paramSources);
-        return this;
-    }
-
-    public MethodBodyGenerator getGenerator() {
-        referenceToInvokeOn.setReferenceType(methodToInvoke.getDeclaringClass());
-        params.add(0, referenceToInvokeOn);
-        MethodInvoker methodInvoker = new MethodInvoker(params, methodToInvoke.getDeclaringClass(), methodToInvoke);
-        return methodInvoker;
-    }
-
-    public void writeTo(ClassNode classNode, MethodNode methodNode) {
-        getGenerator().generateMethodBody(classNode, methodNode);
     }
 }

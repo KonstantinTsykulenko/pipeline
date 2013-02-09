@@ -61,4 +61,8 @@ public class FieldBuilder {
     String getFieldName() {
         return fieldName;
     }
+
+    Class<?> getFieldType() {
+        return fieldType;
+    }
 }

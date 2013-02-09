@@ -15,7 +15,7 @@ import static org.objectweb.asm.wrapper.FieldBuilder._field;
  * @author Alex Chychkan
  * @since 2013/02/06
  */
-public class FieldBuilderTest {
+public class FieldBuilderTest extends AbstractAsmWrapperTest {
 
     /////////////////////////////////////////////
     // TEST METHODS
@@ -74,10 +74,5 @@ public class FieldBuilderTest {
         }
 
         return loadClass(classBuilder);
-    }
-
-    private Class<?> loadClass(ClassBuilder classBuilder) {
-        TestDynamicClassLoader classLoader = new TestDynamicClassLoader(Thread.currentThread().getContextClassLoader());
-        return classLoader.loadClass(classBuilder.build());
     }
 }

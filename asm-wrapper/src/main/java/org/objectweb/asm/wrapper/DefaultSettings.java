@@ -25,4 +25,5 @@ class DefaultSettings {
     public static final int METHOD_ACCESS_MODIFIER = Opcodes.ACC_PUBLIC;
     public static final int FIELD_ACCESS_MODIFIER = Opcodes.ACC_PRIVATE;
     public static final String SUPER_CLASS = Type.getInternalName(Object.class);
+    public static final int METHOD_PARAM_COUNT = 6;
 }

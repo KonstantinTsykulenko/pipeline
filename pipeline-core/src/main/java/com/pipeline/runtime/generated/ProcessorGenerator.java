@@ -6,20 +6,32 @@ import com.pipeline.runtime.ActionArgumentBinder;
 import com.pipeline.runtime.ActionArgumentBinding;
 import com.pipeline.runtime.ExecutionContext;
 import com.pipeline.runtime.Processor;
-import org.objectweb.asm.wrapper.MethodBodyGenerator;
-import org.objectweb.asm.wrapper.MethodBuilder;
 import com.pipeline.util.AnnotationUtils;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.wrapper.ClassBuilder;
+import org.objectweb.asm.wrapper.FieldBuilder;
+import org.objectweb.asm.wrapper.InstructionBuilder;
+import org.objectweb.asm.wrapper.InvocationBuilder;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.objectweb.asm.wrapper.MethodBuilder.*;
+import static org.objectweb.asm.wrapper.CastBuilder.cast;
+import static org.objectweb.asm.wrapper.ClassBuilder._class;
+import static org.objectweb.asm.wrapper.ConstLoader._c;
+import static org.objectweb.asm.wrapper.FieldBuilder._field;
+import static org.objectweb.asm.wrapper.FieldLoader._f;
+import static org.objectweb.asm.wrapper.Initializer._new;
+import static org.objectweb.asm.wrapper.InvocationBuilder.call;
+import static org.objectweb.asm.wrapper.LocalVariableLoader._v;
+import static org.objectweb.asm.wrapper.MethodBuilder._method;
+import static org.objectweb.asm.wrapper.ReturnBuilder._returnNull;
 
 /**
  * @author Konstantin Tsykulenko
@@ -34,6 +46,15 @@ public class ProcessorGenerator {
 
     public Processor getProcessor(Pipeline pipeline) {
         byte[] processorBytecode = createProcessorBytecode(pipeline);
+        try {
+            OutputStream outputStream = new FileOutputStream("carp.class");
+            outputStream.write(processorBytecode);
+            outputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
         Class<?> processorClass = pipelineRuntimeLoader.loadClass(processorBytecode);
         try {
             Processor processor = (Processor) processorClass.newInstance();
@@ -47,7 +68,7 @@ public class ProcessorGenerator {
     }
 
     private void injectDependencies(Processor processor, Map<String, Node> nodeToFieldMapping) {
-        for (Field field : processor.getClass().getFields()) {
+        for (Field field : processor.getClass().getDeclaredFields()) {
             try {
                 Node node = nodeToFieldMapping.get(field.getName());
                 if (node != null) {
@@ -60,38 +81,81 @@ public class ProcessorGenerator {
     }
 
     private byte[] createProcessorBytecode(Pipeline pipeline) {
-        ClassNode classNode = createProcessorClassDefinition();
-
-        classNode.fields.add(createContextField());
+        String processorName = getProcessorName();
+        FieldBuilder contextField = _field(ExecutionContext.class, GeneratorConstants.CONTEXT_FIELD).isPublic();
+        ClassBuilder classBuilder = _class(processorName).implementing(Processor.class).
+                field(contextField);
 
         mapFields(pipeline);
 
-        createNodeFields(classNode);
+        classBuilder.fields(createNodeFields());
 
-        classNode.methods.add(createDefaultConstructor(classNode));
+        InstructionBuilder contextInitializer = _new(ExecutionContext.class, contextField, processorName);
 
-        Method method;
-        try {
-            method = Processor.class.getMethod(GeneratorConstants.RUN_METHOD_NAME, Map.class);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalStateException(e);
-        }
+        InvocationBuilder contextPopulator =
+                call(GeneratorConstants.EXECUTION_CONTEXT_PUT_ALL).on(_f(contextField, processorName)).params(
+                        _v(1)
+                );
 
-        classNode.methods.add(createRunMethod(classNode, method));
+        List<InstructionBuilder> instructionBuilders = buildNodeInvocations(processorName, contextField);
+        instructionBuilders.add(0, contextInitializer);
+        instructionBuilders.add(1, contextPopulator);
+        instructionBuilders.add(_returnNull());
 
-        final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        classNode.accept(cw);
-        return cw.toByteArray();
+
+        classBuilder.method(_method(GeneratorConstants.PROCESSOR_RUN).$(
+                instructionBuilders
+        ));
+
+        return classBuilder.build();
     }
 
-    private void createNodeFields(ClassNode classNode) {
+    private List<InstructionBuilder> buildNodeInvocations(String processorName, FieldBuilder contextField) {
+        List<InstructionBuilder> instructions = new LinkedList<InstructionBuilder>();
+
         for (Map.Entry<String, Node> nodeMapEntry : nodeToFieldMapping.get().entrySet()) {
-            classNode.fields.add(new FieldNode(Opcodes.ACC_PUBLIC,
-                    nodeMapEntry.getKey(),
-                    Type.getDescriptor(nodeMapEntry.getValue().getAction().getClass()),
-                    null,
-                    null));
+
+            Class<?> actionClass = nodeMapEntry.getValue().getAction().getClass();
+
+            Method methodToInvoke = AnnotationUtils.getHanlderMethod(actionClass);
+
+            String fieldName = nodeMapEntry.getKey();
+
+            List<ActionArgumentBinding> actionArgumentBindings =
+                    getActionArgumentBinder().createActionArgumentBindings(methodToInvoke);
+
+            List<InstructionBuilder> params = new ArrayList<InstructionBuilder>(actionArgumentBindings.size() + 1);
+
+            for (ActionArgumentBinding argumentBinding : actionArgumentBindings) {
+                InstructionBuilder builder =
+                        call(GeneratorConstants.EXECUTION_CONTEXT_GET).on(
+                                _f(contextField, processorName)).params(
+                                _c(argumentBinding.getArgumentName()),
+                                _c(Type.getType(argumentBinding.getArgumentType())
+                                ));
+                params.add(builder);
+
+                params.add(cast(argumentBinding.getArgumentType()));
+            }
+
+            instructions.addAll(params);
+
+            instructions.add(
+                call(methodToInvoke).on(_f(_field(actionClass, fieldName), processorName)).params(params)
+            );
         }
+
+        return instructions;
+    }
+
+    private List<FieldBuilder> createNodeFields() {
+        List<FieldBuilder> fieldBuilders = new ArrayList<FieldBuilder>(nodeToFieldMapping.get().size());
+
+        for (Map.Entry<String, Node> nodeMapEntry : nodeToFieldMapping.get().entrySet()) {
+            fieldBuilders.add(_field(nodeMapEntry.getValue().getAction().getClass(), nodeMapEntry.getKey()).isPublic());
+        }
+
+        return fieldBuilders;
     }
 
     private void mapFields(Pipeline pipeline) {
@@ -107,89 +171,23 @@ public class ProcessorGenerator {
         this.nodeToFieldMapping.set(nodeToFieldMapping);
     }
 
-    private MethodNode createRunMethod(ClassNode classNode, Method method) {
-        MethodNode runMethod = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, GeneratorConstants.RUN_METHOD_NAME, Type.getMethodDescriptor(method), null, null);
-
-        createInitialContextParameterBinding(classNode, runMethod);
-
-        createNodeInvocations(classNode, runMethod);
-
-        runMethod.instructions.add(new InsnNode(Opcodes.ACONST_NULL));
-        runMethod.instructions.add(new InsnNode(Opcodes.ARETURN));
-        return runMethod;
-    }
-
-    private void createInitialContextParameterBinding(ClassNode classNode, MethodNode runMethod) {
-        Method method = GeneratorConstants.EXECUTION_CONTEXT_PUT_ALL;
-        callOn(getField(GeneratorConstants.CONTEXT_FIELD)).method(method).param(getLocalVariable(1)).writeTo(classNode, runMethod);
-    }
-
-    private void createNodeInvocations(ClassNode classNode, MethodNode methodNode) {
-        for (Map.Entry<String, Node> nodeMapEntry : nodeToFieldMapping.get().entrySet()) {
-
-            Class<?> actionClass = nodeMapEntry.getValue().getAction().getClass();
-
-            Method methodToInvoke = AnnotationUtils.getHanlderMethod(actionClass);
-
-            String fieldName = nodeMapEntry.getKey();
-
-            List<ActionArgumentBinding> actionArgumentBindings =
-                    getActionArgumentBinder().createActionArgumentBindings(methodToInvoke);
-
-            List<MethodBodyGenerator> params = new ArrayList<MethodBodyGenerator>(actionArgumentBindings.size());
-
-            for (ActionArgumentBinding argumentBinding : actionArgumentBindings) {
-                MethodBuilder builder = callOn(getField(GeneratorConstants.CONTEXT_FIELD)).
-                        method(GeneratorConstants.EXECUTION_CONTEXT_GET).
-                        params(value(argumentBinding.getArgumentName()),
-                                value(Type.getType(argumentBinding.getArgumentType())));
-                MethodBodyGenerator generator = cast(builder, argumentBinding.getArgumentType());
-                params.add(generator);
-            }
-
-            callOn(getField(fieldName)).method(methodToInvoke).params(params).writeTo(classNode, methodNode);
-        }
-    }
-
     private ActionArgumentBinder getActionArgumentBinder() {
         return new ActionArgumentBinder();
     }
 
-    private FieldNode createContextField() {
-        return new FieldNode(Opcodes.ACC_PUBLIC, GeneratorConstants.CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class), null, null);
-    }
+//    private void initContext(ClassNode classNode, MethodNode defaultConstructor) {
+//        defaultConstructor.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+//        // stack: this
+//        defaultConstructor.instructions.add(new TypeInsnNode(Opcodes.NEW, Type.getInternalName(ExecutionContext.class)));
+//        // stack: this :: <ExecutionContext>
+//        defaultConstructor.instructions.add(new InsnNode(Opcodes.DUP));
+//        // stack: this :: <ExecutionContext> :: <ExecutionContext>
+//        defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, Type.getInternalName(ExecutionContext.class), "<init>", "()V"));
+//        // stack: this :: <ExecutionContext>
+//        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, GeneratorConstants.CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
+//    }
 
-    private MethodNode createDefaultConstructor(ClassNode classNode) {
-        MethodNode defaultConstructor = new MethodNode(Opcodes.ASM4, Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
-
-        defaultConstructor.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V"));
-
-        initContext(classNode, defaultConstructor);
-
-        defaultConstructor.instructions.add(new InsnNode(Opcodes.RETURN));
-        return defaultConstructor;
-    }
-
-    private void initContext(ClassNode classNode, MethodNode defaultConstructor) {
-        defaultConstructor.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        // stack: this
-        defaultConstructor.instructions.add(new TypeInsnNode(Opcodes.NEW, Type.getInternalName(ExecutionContext.class)));
-        // stack: this :: <ExecutionContext>
-        defaultConstructor.instructions.add(new InsnNode(Opcodes.DUP));
-        // stack: this :: <ExecutionContext> :: <ExecutionContext>
-        defaultConstructor.instructions.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, Type.getInternalName(ExecutionContext.class), "<init>", "()V"));
-        // stack: this :: <ExecutionContext>
-        defaultConstructor.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, classNode.name, GeneratorConstants.CONTEXT_FIELD, Type.getDescriptor(ExecutionContext.class)));
-    }
-
-    private ClassNode createProcessorClassDefinition() {
-        ClassNode classNode = new ClassNode(Opcodes.ASM4);//ASM API version
-        classNode.version = Opcodes.V1_6;//JRE 1.6+
-        classNode.access = Opcodes.ACC_PUBLIC;
-        classNode.interfaces = Arrays.asList(new String[]{"com/pipeline/runtime/Processor"});
-        classNode.superName = "java/lang/Object";
-        classNode.name = "com/pipeline/runtime/ProcessorImpl" + definedProcessors.incrementAndGet();
-        return classNode;
+    private String getProcessorName() {
+        return Processor.class.getCanonicalName() + definedProcessors.incrementAndGet();
     }
 }

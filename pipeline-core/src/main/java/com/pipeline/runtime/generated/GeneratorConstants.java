@@ -1,6 +1,7 @@
 package com.pipeline.runtime.generated;
 
 import com.pipeline.runtime.ExecutionContext;
+import com.pipeline.runtime.Processor;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -16,6 +17,8 @@ class GeneratorConstants {
     static final Method EXECUTION_CONTEXT_PUT;
 
     static final Method EXECUTION_CONTEXT_GET;
+
+    static final Method PROCESSOR_RUN;
 
     static final String PUT_ALL = "putAll";
 
@@ -42,6 +45,12 @@ class GeneratorConstants {
 
         try {
             EXECUTION_CONTEXT_GET = ExecutionContext.class.getMethod(GET, String.class, Class.class);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        }
+
+        try {
+            PROCESSOR_RUN = Processor.class.getMethod(GeneratorConstants.RUN_METHOD_NAME, Map.class);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException(e);
         }

@@ -30,6 +30,8 @@ public class ClassBuilder {
 
     private Map<String, FieldBuilder> fields;
 
+    private Set<MethodBuilder> methods;
+
     /////////////////////////////////////////////
     // CONSTRUCTORS
 
@@ -41,6 +43,7 @@ public class ClassBuilder {
         this.interfaces = new HashSet<Class>();
         this.constructors = new HashSet<MethodNode>();
         this.fields = new HashMap<String, FieldBuilder>();
+        this.methods = new HashSet<MethodBuilder>();
     }
 
     /////////////////////////////////////////////
@@ -71,23 +74,63 @@ public class ClassBuilder {
         return this;
     }
 
+    public ClassBuilder fields(FieldBuilder... fieldBuilders) {
+        for (FieldBuilder fieldBuilder : fieldBuilders) {
+            field(fieldBuilder);
+        }
+        return this;
+    }
+
+    public ClassBuilder fields(Collection<FieldBuilder> fieldBuilders) {
+        for (FieldBuilder fieldBuilder : fieldBuilders) {
+            field(fieldBuilder);
+        }
+        return this;
+    }
+
+    public ClassBuilder method(MethodBuilder methodBuilder) {
+        methods.add(methodBuilder);
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     public byte[] build() {
         ClassNode classNode = buildClass();
 
         classNode.fields.addAll(buildFields());
+        classNode.methods.addAll(buildMethods());
 
         return produceBytecode(classNode);
     }
 
     private Collection<FieldNode> buildFields() {
-        HashSet<FieldNode> fieldNodes = new HashSet<FieldNode>();
+        HashSet<FieldNode> fieldNodes = createFittingHashSet(fields.size());
 
         for (FieldBuilder fieldBuilder : fields.values()) {
             fieldNodes.add(fieldBuilder.build());
         }
 
         return fieldNodes;
+    }
+
+    private Collection<MethodNode> buildMethods() {
+        HashSet<MethodNode> methodNodes = this.createFittingHashSet(methods.size());
+
+        for (MethodBuilder methodBuilder : methods) {
+            methodNodes.add(methodBuilder.build());
+        }
+
+        return methodNodes;
+    }
+
+    /**
+     * Convenience method that created a HashSet with capacity enough to fit a given number of elements without resizing
+     * @param numElements number of elements to be added to the HashSet
+     * @param <T> Type of the HashSet elements
+     * @return HashSet with capacity enough to fit a given number of elements without resizing
+     */
+    private <T> HashSet<T> createFittingHashSet(int numElements) {
+        return new HashSet<T>((int) (numElements/.75f) + 1);
     }
 
     private byte[] produceBytecode(ClassNode classNode) {

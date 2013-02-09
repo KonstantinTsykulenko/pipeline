@@ -2,42 +2,42 @@ package org.objectweb.asm.wrapper;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Konstantin Tsykulenko
  * @since 1/16/13
  */
-public class FieldLoader implements ReferenceLoader {
+public class FieldLoader extends Invokable {
 
     private String fieldName;
     private Class<?> fieldType;
+    private String ownerName;
 
-    public FieldLoader(String fieldName, Class<?> fieldType) {
+    private FieldLoader(String fieldName, Class<?> fieldType, String ownerName) {
         this.fieldName = fieldName;
         this.fieldType = fieldType;
-    }
-
-    public FieldLoader(String fieldName) {
-        this.fieldName = fieldName;
+        this.ownerName = ownerName;
     }
 
     @Override
-    public void generateMethodBody(ClassNode classNode, MethodNode methodNode) {
+    protected List<AbstractInsnNode> build() {
         if (fieldType == null) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Field type can not be null");
         }
-
-        methodNode.instructions.add(new FieldInsnNode(Opcodes.GETFIELD,
-                classNode.name,
+        return Arrays.<AbstractInsnNode>asList(new FieldInsnNode(Opcodes.GETFIELD,
+                ownerName,
                 fieldName,
                 Type.getDescriptor(fieldType)));
     }
 
-    @Override
-    public void setReferenceType(Class<?> referenceType) {
-        this.fieldType = referenceType;
+    public static FieldLoader _f(FieldBuilder fieldBuilder, String ownerName) {
+        return new FieldLoader(fieldBuilder.getFieldName(),
+                fieldBuilder.getFieldType(),
+                ownerName.replace(".", "/"));
     }
 }
